@@ -39,33 +39,21 @@ await foreach (var obj in FilterByLoggedAsync("D:\\data.json", true, 3_000_000, 
 
 return;
 
-
 async IAsyncEnumerable<JObject> FilterByLoggedAsync(string filePath, bool loggedInOnly, int stopNumber, [EnumeratorCancellation] CancellationToken ct)
 {
-    var found = 0;
+    var foundCount = 0;
+    var targetStatus = loggedInOnly ? "Logged In" : "Logged Out";
     await foreach (var obj in ReadRecordAsync(filePath, ct))
     {
-        if (loggedInOnly)
+        if (obj["auth"]?.Value<string>() == targetStatus)
         {
-            yield return CheckLoginStatus("Logged In", obj, ref found);
-        }
-        else
-        {
-            yield return CheckLoginStatus("Logged Out", obj, ref found);
+            foundCount++;
+            yield return obj;
         }
 
-        if (found == stopNumber)
+        if (foundCount == stopNumber)
             break;
     }
-}
-
-static JObject CheckLoginStatus(string status, JObject obj, ref int counter)
-{
-    if (obj["auth"]?.ToString() != status) 
-        return new JObject();
-    
-    counter++;
-    return obj;
 }
 
 async IAsyncEnumerable<JObject> ReadRecordAsync(string filePath,[EnumeratorCancellation] CancellationToken cancellationToken)
